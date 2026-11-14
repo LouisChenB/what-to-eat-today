@@ -58,7 +58,7 @@ const steps = {
 
 function getRecipe(dish) {
   return {
-    images: (recipes[dish.id] || []).map((name) => `/${dish.category}/recipes/${name}.webp`),
+    images: (recipes[dish.id] || []).map((name) => `/${dish.category}/recipes/${name}.jpg`),
     steps: steps[dish.id] || [],
   };
 }

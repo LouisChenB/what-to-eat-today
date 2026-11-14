@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { test, beforeEach } = require('node:test');
+const { setting: buildSettings } = require('../project.config.json');
 const { categories, dishes } = require('../data/dishes');
 const { getRecipe } = require('../data/recipes');
 const { getMealPeriod, getTitle, changeSelection, randomPair } = require('../lib/meal');
@@ -168,14 +169,22 @@ test('收件人可以查看并保存快照，同一卡片去重，本机草稿�
 });
 
 test('全部菜品、详情入口和图片都随包提供', () => {
+  assert.equal(buildSettings.ignoreUploadUnusedFiles, false, '动态引用的做法图必须随包上传');
   assert.deepEqual(categories.map(({ id }) => dishes.filter((dish) => dish.category === id).length), [8, 8]);
   let recipeCount = 0;
   for (const dish of dishes) {
     const recipe = getRecipe(dish);
     assert.ok(recipe.images.length || recipe.steps.length, dish.name);
     recipeCount += recipe.images.length;
-    for (const file of [dish.photo, ...recipe.images, dish.detailUrl.split('?')[0] + '.wxml']) {
+    for (const file of [dish.photo, dish.detailUrl.split('?')[0] + '.wxml']) {
       assert.ok(fs.existsSync(path.join(root, file)), file);
+    }
+    for (const image of recipe.images) {
+      assert.equal(path.posix.dirname(image), `/${dish.category}/recipes`);
+      assert.equal(path.extname(image), '.jpg');
+      const jpeg = fs.readFileSync(path.join(root, image));
+      assert.equal(jpeg.readUInt16BE(0), 0xffd8, image);
+      assert.equal(jpeg.readUInt16BE(jpeg.length - 2), 0xffd9, image);
     }
   }
   assert.equal(recipeCount, 8);
@@ -200,12 +209,16 @@ test('标题栏避开微信胶囊，返回保留页面栈，分享直达时返�
   }
 });
 
-test('详情按图号打开所属分包大图页，翻页换图且不能越过首尾', () => {
+test('详情按图号打开所属分包大图页，翻页换图且不能越过首尾', (t) => {
   let url;
   wx.navigateTo = (options) => { url = options.url; };
   const page = dishDetail('vegetables');
   page.setData = (next) => { Object.assign(page.data, next); };
   page.onLoad({ id: 'v4' });
+  assert.deepEqual(page.data.images, [
+    '/vegetables/recipes/tomato-eggs-1.jpg',
+    '/vegetables/recipes/tomato-eggs-2.jpg',
+  ]);
   page.openRecipePhoto(tap({ index: 1 }));
   assert.equal(url, '/vegetables/pages/recipe-photo/index?id=v4&index=1');
   const reader = mount('../vegetables/pages/recipe-photo/index');
@@ -220,7 +233,15 @@ test('详情按图号打开所属分包大图页，翻页换图且不能越过�
   assert.equal(reader.data.index, 0);
   reader.nextPhoto();
   assert.match(reader.data.slides[0], /tomato-eggs-2/);
-  reader.handleImageError(tap({ src: reader.data.slides[0] }));
+  const src = reader.data.slides[0];
+  const error = { ...tap({ src }), detail: { errMsg: 'decode failed' } };
+  const warn = t.mock.method(console, 'warn', () => {});
+  page.handleRecipeImageError(error);
+  reader.handleImageError(error);
+  assert.deepEqual(warn.mock.calls.map(({ arguments: args }) => args), [
+    ['做法缩略图加载失败', src, 'decode failed'],
+    ['做法大图加载失败', src, 'decode failed'],
+  ]);
   assert.equal(reader.data.imageError, true);
   reader.previousPhoto();
   assert.equal(reader.data.imageError, false);

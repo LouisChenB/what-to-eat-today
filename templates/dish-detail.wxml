@@ -8,13 +8,16 @@
 
     <view class="recipe-section">
       <text class="recipe-title display">做法</text>
-      <view wx:if="{{images.length}}" class="recipe-pages">
+      <view wx:if="{{images.length}}" class="recipe-pages {{images.length === 1 ? 'recipe-pages--single' : ''}}">
         <view
           wx:for="{{images}}" wx:key="*this" class="recipe-page" role="button"
           data-index="{{index}}" bindtap="openRecipePhoto" hover-class="pressed"
           aria-label="查看第 {{index + 1}} 张做法大图"
         >
-          <image class="recipe-thumbnail" src="{{item}}" mode="aspectFit" />
+          <image
+            class="recipe-thumbnail" src="{{item}}" mode="widthFix"
+            data-src="{{item}}" binderror="handleRecipeImageError"
+          />
           <view class="recipe-caption">
             <text>第 {{index + 1}} 张</text>
             <image class="expand-icon" src="/assets/icons/expand.svg" mode="aspectFit" aria-hidden="{{true}}" />

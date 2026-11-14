@@ -10,6 +10,7 @@
     "uglifyFileName": false,
     "enhance": true,
     "compileWorklet": false,
+    "ignoreUploadUnusedFiles": false,
     "uploadWithSourceMap": true,
     "packNpmManually": false,
     "packNpmRelationList": [],
