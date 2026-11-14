@@ -30,5 +30,3 @@
 .reader-page-button .arrow { width: 18rpx; height: 18rpx; }
 .reader-previous { transform: rotate(-135deg); }
 .reader-counter { color: var(--ink); font-size: 31rpx; font-variant-numeric: tabular-nums; }
-.reader-hint { display: block; padding: 2rpx 0 1rpx; color: var(--muted); font-size: 25rpx; }
-.reader-tools > .reader-hint:only-child { padding-top: 18rpx; }

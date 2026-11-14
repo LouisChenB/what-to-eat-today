@@ -7,24 +7,36 @@
     </view>
   </view>
 
-  <view class="order-body">
-    <view class="rail">
-      <view wx:for="{{categories}}" wx:key="id" class="category display {{active === item.id ? 'category--active' : ''}}" role="button" data-id="{{item.id}}" bindtap="selectCategory" hover-class="pressed" aria-label="{{item.name}}{{active === item.id ? '，当前分类' : ''}}">{{item.name}}</view>
-    </view>
-    <view class="catalogue">
-      <view class="catalogue-header">
-        <view class="catalogue-action random-button" role="button" bindtap="drawPair" hover-class="pressed">
-          <image class="toolbar-icon" src="/assets/icons/shuffle.svg" mode="aspectFit" />
-          <text>随机一荤一素</text>
-        </view>
-        <view class="catalogue-action history-button" role="button" bindtap="openHistory" hover-class="pressed">
-          <image class="toolbar-icon" src="/assets/icons/history.svg" mode="aspectFit" />
-          <text>历史菜单</text>
-        </view>
+  <view class="catalogue">
+    <view class="catalogue-header">
+      <view class="catalogue-action random-button" role="button" bindtap="drawPair" hover-class="pressed">
+        <image class="toolbar-icon" src="/assets/icons/shuffle.svg" mode="aspectFit" />
+        <text>随机一荤一素</text>
       </view>
-      <scroll-view class="dish-scroll" scroll-y scroll-into-view="{{scrollTarget}}">
-        <view id="{{active}}-start"></view>
-        <dish-row wx:for="{{visibleDishes}}" wx:key="id" dish="{{item}}" selectable selected="{{item.selected}}" bind:selection="toggleDish" />
+      <view class="catalogue-action history-button" role="button" bindtap="openHistory" hover-class="pressed">
+        <image class="toolbar-icon" src="/assets/icons/history.svg" mode="aspectFit" />
+        <text>历史菜单</text>
+      </view>
+    </view>
+    <view class="catalogue-body">
+      <view class="category-shortcuts">
+        <button
+          wx:for="{{categories}}" wx:key="id"
+          class="control category-shortcut display {{activeCategory === item.id ? 'category-shortcut--active' : ''}}"
+          data-id="{{item.id}}" bindtap="jumpToCategory" hover-class="pressed"
+          aria-label="{{categoryLabels[item.id]}}{{activeCategory === item.id ? '，当前分类' : ''}}"
+        >{{categoryLabels[item.id]}}</button>
+      </view>
+      <scroll-view class="dish-scroll" scroll-y scroll-into-view="{{scrollTarget}}" bindscroll="handleDishScroll">
+        <view class="dish-list">
+          <block wx:for="{{dishList}}" wx:key="id">
+            <view
+              wx:if="{{index === 0 || item.category !== dishList[index - 1].category}}"
+              id="category-{{item.category}}" class="catalogue-category display"
+            >{{categoryLabels[item.category]}}</view>
+            <dish-row dish="{{item}}" selectable selected="{{item.selected}}" bind:selection="toggleDish" />
+          </block>
+        </view>
       </scroll-view>
     </view>
   </view>

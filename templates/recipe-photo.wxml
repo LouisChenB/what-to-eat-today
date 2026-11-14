@@ -14,8 +14,8 @@
     <text wx:else class="reader-message">{{imageError ? '图片暂时无法加载' : '没有可查看的做法图'}}</text>
   </view>
 
-  <view wx:if="{{total > 1 || (total === 1 && !imageError)}}" class="reader-tools">
-    <view wx:if="{{total > 1}}" class="reader-pagination">
+  <view wx:if="{{total > 1}}" class="reader-tools">
+    <view class="reader-pagination">
       <button
         class="control reader-page-button" disabled="{{index === 0}}"
         bindtap="previousPhoto" hover-class="pressed" aria-label="上一张"
@@ -26,6 +26,5 @@
         bindtap="nextPhoto" hover-class="pressed" aria-label="下一张"
       ><view class="arrow" aria-hidden="{{true}}"></view></button>
     </view>
-    <text wx:if="{{!imageError}}" class="reader-hint">双指缩放</text>
   </view>
 </template>

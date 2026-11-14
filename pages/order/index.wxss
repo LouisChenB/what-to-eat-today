@@ -24,18 +24,19 @@
 }
 .cover-title { font-size: 68rpx; line-height: 1.12; white-space: nowrap; }
 .cover-date { font-size: 29rpx; }
-.order-body { flex: 1; min-height: 0; display: flex; }
-.rail { width: 134rpx; flex-shrink: 0; background: var(--rail); border-right: 1px solid var(--line); }
-.category { position: relative; display: flex; align-items: center; justify-content: center; box-sizing: border-box; height: 104rpx; min-height: 44px; font-size: 34rpx; line-height: 1.2; }
-.category + .category { border-top: 1px solid var(--line); }
-.category--active { background: var(--active-rail); }
-.category--active::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 5rpx; background: var(--accent); }
-.catalogue { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 0 22rpx 0 26rpx; }
-.catalogue-header { display: flex; gap: 12rpx; justify-content: space-between; align-items: stretch; height: 104rpx; min-height: 44px; border-bottom: 1px solid var(--line); box-sizing: border-box; }
+.catalogue { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.catalogue-header { display: flex; flex-shrink: 0; gap: 12rpx; justify-content: space-between; align-items: stretch; height: 104rpx; min-height: 44px; padding: 0 28rpx; border-bottom: 1px solid var(--line); box-sizing: border-box; }
 .catalogue-action { display: flex; align-items: center; gap: 9rpx; font-size: 27rpx; font-weight: 600; white-space: nowrap; }
 .history-button { color: var(--muted); }
 .toolbar-icon { width: 30rpx; height: 30rpx; flex-shrink: 0; }
-.dish-scroll { height: 0; flex: 1; }
+.catalogue-body { flex: 1; min-height: 0; display: flex; }
+.category-shortcuts { width: 124rpx; flex-shrink: 0; background: var(--rail); border-right: 1px solid var(--line); }
+.control.category-shortcut { width: 100%; min-height: 44px; height: 96rpx; display: flex; align-items: center; justify-content: center; font-size: 32rpx; }
+.control.category-shortcut--active { background: var(--category-label); }
+.category-shortcut + .category-shortcut { border-top: 1px solid var(--line); }
+.dish-scroll { flex: 1; min-width: 0; height: 100%; }
+.dish-list { padding: 0 24rpx; }
+.catalogue-category { display: block; padding: 22rpx 0 2rpx; color: var(--ink); font-size: 42rpx; line-height: 1.2; }
 .order-actions { position: relative; inset: auto; justify-content: space-between; flex-shrink: 0; border-radius: 22rpx 22rpx 0 0; }
 .selected-count { display: flex; align-items: center; min-height: 44px; gap: 18rpx; padding: 0 12rpx; font-size: 34rpx; white-space: nowrap; }
 .selected-arrow { transform: rotate(-45deg); margin-top: 8rpx; }

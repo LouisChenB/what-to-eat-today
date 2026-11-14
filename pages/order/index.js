@@ -6,8 +6,10 @@ const { getNavigationLayout } = require('../../lib/navigation');
 Page({
   data: {
     categories,
-    active: 'meat',
-    visibleDishes: [],
+    categoryLabels: { meat: '荤菜', vegetables: '素菜' },
+    activeCategory: 'meat',
+    dishList: [],
+    scrollTarget: '',
     selectedGroups: [],
     showingSelection: false,
     headerInset: 0,
@@ -15,7 +17,6 @@ Page({
     dateLabel: '',
     pair: [],
     canReroll: false,
-    scrollTarget: '',
   },
 
   onLoad() {
@@ -27,29 +28,62 @@ Page({
     this.refreshList();
   },
 
+  onReady() { this.measureCategoryBoundary(); },
+
+  onResize() { this.measureCategoryBoundary(); },
+
+  measureCategoryBoundary() {
+    const query = wx.createSelectorQuery().in(this);
+    query.select('.dish-scroll').boundingClientRect();
+    query.select('.dish-list').boundingClientRect();
+    query.select('#category-vegetables').boundingClientRect();
+    query.exec(([viewport, list, vegetables]) => {
+      if (!viewport || !list || !vegetables) return;
+      this.vegetableScrollTop = Math.min(vegetables.top - list.top, list.height - viewport.height);
+      this.updateActiveCategory(viewport.top - list.top);
+    });
+  },
+
+  handleDishScroll({ detail: { scrollTop } }) {
+    this.updateActiveCategory(scrollTop);
+  },
+
+  updateActiveCategory(scrollTop) {
+    if (this.vegetableScrollTop === undefined) return;
+    // The scroll event and the measured heading can round pixels differently.
+    const activeCategory = scrollTop > 0 && scrollTop + 1 >= this.vegetableScrollTop ? 'vegetables' : 'meat';
+    if (this.data.activeCategory !== activeCategory) this.setData({ activeCategory });
+  },
+
   refreshList() {
-    const { active } = this.data;
     const { date, meal } = this.draft || getMealPeriod();
     const ids = this.draft?.dishIds || [];
     this.setData({
       dateLabel: `${getDateLabel(date, false)} · ${getMealLabel(meal)}`,
       count: ids.length,
       selectedGroups: groupDishes(ids),
-      visibleDishes: dishes.filter((dish) => dish.category === active).map((dish) => ({
+      dishList: dishes.map((dish) => ({
         ...dish,
         selected: ids.includes(dish.id),
       })),
     });
   },
 
-  selectCategory(event) {
-    const active = event.currentTarget.dataset.id;
-    if (active === this.data.active) return;
-    this.setData({
-      active,
-      scrollTarget: `${active}-start`,
+  jumpToCategory(event) {
+    const { id } = event.currentTarget.dataset;
+    if (!categories.some((category) => category.id === id)) return;
+
+    const scrollTarget = `category-${id}`;
+    this.requestedScrollTarget = scrollTarget;
+    if (this.data.scrollTarget !== scrollTarget) {
+      this.setData({ scrollTarget, activeCategory: id });
+      return;
+    }
+
+    // Reset the anchor in the view so tapping it again can trigger a new jump.
+    this.setData({ scrollTarget: '', activeCategory: id }, () => {
+      if (this.requestedScrollTarget === scrollTarget) this.setData({ scrollTarget });
     });
-    this.refreshList();
   },
 
   toggleDish(event) {

@@ -54,17 +54,73 @@ test('餐次使用本地时间，16:00 开始晚餐', () => {
   assert.equal(getTitle(sample), '2026年11月14日 晚餐');
 });
 
-test('重新打开点菜页仍有草稿，跨日继续选菜保留名称和原餐次', () => {
+test('点菜列表先荤后素，可跨分类选菜，重新打开仍恢复草稿', () => {
   const draft = { ...sample, title: '家里的晚饭' };
   setDraft(draft);
   const page = mount('../pages/order/index');
   page.onShow();
   assert.equal(page.data.count, 2);
-  page.selectCategory(tap({ id: 'vegetables' }));
-  assert.equal(page.data.visibleDishes[0].selected, true);
-  assert.equal(page.data.scrollTarget, 'vegetables-start');
-  assert.deepEqual(changeSelection(page.draft, ['m1', 'v1', 'v2'], new Date(2026, 10, 15, 9)),
-    { ...draft, dishIds: ['m1', 'v1', 'v2'] });
+  assert.deepEqual(page.data.dishList.map(({ category }) => category), [
+    ...Array(8).fill('meat'), ...Array(8).fill('vegetables'),
+  ]);
+  assert.deepEqual(page.data.dishList.filter(({ selected }) => selected).map(({ id }) => id), ['m1', 'v1']);
+  page.toggleDish({ detail: { id: 'm2' } });
+  page.toggleDish({ detail: { id: 'v2' } });
+  const updatedDraft = { ...draft, dishIds: ['m1', 'm2', 'v1', 'v2'] };
+  assert.deepEqual(readState().draft, updatedDraft);
+  const reopened = mount('../pages/order/index');
+  reopened.onShow();
+  assert.equal(reopened.data.count, 4);
+  assert.deepEqual(reopened.data.dishList.filter(({ selected }) => selected).map(({ id }) => id), updatedDraft.dishIds);
+  assert.deepEqual(changeSelection(reopened.draft, ['m1', 'v1'], new Date(2026, 10, 15, 9)), draft);
+});
+
+test('分类快捷按钮可双向跳转并重复定位，保留列表和草稿', () => {
+  setDraft(sample);
+  const page = mount('../pages/order/index');
+  page.onShow();
+  const { dishList } = page.data;
+  const updates = [];
+  const setData = page.setData;
+  page.setData = (update, done) => {
+    updates.push(update);
+    setData(update, done);
+  };
+
+  page.jumpToCategory(tap({ id: 'vegetables' }));
+  page.jumpToCategory(tap({ id: 'meat' }));
+  page.jumpToCategory(tap({ id: 'meat' }));
+
+  assert.deepEqual(updates, [
+    { scrollTarget: 'category-vegetables', activeCategory: 'vegetables' },
+    { scrollTarget: 'category-meat', activeCategory: 'meat' },
+    { scrollTarget: '', activeCategory: 'meat' },
+    { scrollTarget: 'category-meat' },
+  ]);
+  assert.equal(page.data.dishList, dishList);
+  assert.deepEqual(readState().draft, sample);
+});
+
+test('手动滚过分类标题时高亮双向切换', () => {
+  const page = mount('../pages/order/index');
+  const rects = [
+    { top: 260, height: 480 },
+    { top: 260, height: 1320 },
+    { top: 920 },
+  ];
+  const query = { select: () => ({ boundingClientRect() {} }), exec: (done) => done(rects) };
+  wx.createSelectorQuery = () => ({ in: () => query });
+  page.onReady();
+
+  for (const [scrollTop, expected] of [[0, 'meat'], [650, 'meat'], [660, 'vegetables'], [800, 'vegetables'], [650, 'meat']]) {
+    page.handleDishScroll({ detail: { scrollTop } });
+    assert.equal(page.data.activeCategory, expected);
+  }
+
+  rects[0].height = 800;
+  page.onResize();
+  page.handleDishScroll({ detail: { scrollTop: 520 } });
+  assert.equal(page.data.activeCategory, 'vegetables');
 });
 
 test('随机结果仅包含未选菜，换一组避开上一组，确认才合并', () => {
@@ -86,7 +142,7 @@ test('随机结果仅包含未选菜，换一组避开上一组，确认才合�
   assert.equal(randomPair(dishes.filter(({ id }) => !['m8', 'v8'].includes(id)).map(({ id }) => id)).canReroll, false);
 });
 
-test('已选清单按分类展示草稿，切换分类与关闭清单不影响选择', () => {
+test('已选清单按分类展示草稿，关闭清单不影响选择', () => {
   const page = mount('../pages/order/index');
   page.onShow();
   page.openSelection();
@@ -95,7 +151,6 @@ test('已选清单按分类展示草稿，切换分类与关闭清单不影响�
   page.closeSelection();
   setDraft(sample);
   page.onShow();
-  page.selectCategory(tap({ id: 'vegetables' }));
   page.openSelection();
   assert.equal(page.data.count, 2);
   assert.deepEqual(page.data.selectedGroups.map(({ dishes }) => dishes.map(({ id }) => id)), [['m1'], ['v1']]);

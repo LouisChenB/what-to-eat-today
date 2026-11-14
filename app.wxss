@@ -4,8 +4,7 @@ page {
   --surface: #fffcee;
   --tray: #fff6c5;
   --rail: #fff3af;
-  --active-rail: #ffe35b;
-  --accent: #c78d00;
+  --category-label: #ffe35b;
   --line: #e6d891;
   --action: #302b10;
   --on-action: #fff4a0;
