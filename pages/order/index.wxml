@@ -1,0 +1,77 @@
+<view class="order">
+  <view class="cover" style="--header-inset: {{headerInset}}px">
+    <image class="cover-image" src="/assets/brand/order-cover.jpg" mode="aspectFill" />
+    <view class="cover-copy">
+      <text class="cover-title display">一桌家常</text>
+      <text class="cover-date display">{{dateLabel}}</text>
+    </view>
+  </view>
+
+  <view class="order-body">
+    <view class="rail">
+      <view wx:for="{{categories}}" wx:key="id" class="category display {{active === item.id ? 'category--active' : ''}}" role="button" data-id="{{item.id}}" bindtap="selectCategory" hover-class="pressed" aria-label="{{item.name}}{{active === item.id ? '，当前分类' : ''}}">{{item.name}}</view>
+    </view>
+    <view class="catalogue">
+      <view class="catalogue-header">
+        <view class="catalogue-action random-button" role="button" bindtap="drawPair" hover-class="pressed">
+          <image class="toolbar-icon" src="/assets/icons/shuffle.svg" mode="aspectFit" />
+          <text>随机一荤一素</text>
+        </view>
+        <view class="catalogue-action history-button" role="button" bindtap="openHistory" hover-class="pressed">
+          <image class="toolbar-icon" src="/assets/icons/history.svg" mode="aspectFit" />
+          <text>历史菜单</text>
+        </view>
+      </view>
+      <scroll-view class="dish-scroll" scroll-y scroll-into-view="{{scrollTarget}}">
+        <view id="{{active}}-start"></view>
+        <dish-row wx:for="{{visibleDishes}}" wx:key="id" dish="{{item}}" selectable selected="{{item.selected}}" bind:selection="toggleDish" />
+      </scroll-view>
+    </view>
+  </view>
+
+  <view class="action-bar order-actions">
+    <view class="selected-count display" role="button" bindtap="openSelection" hover-class="pressed" aria-label="查看已选的 {{count}} 道菜">
+      <text>已选 {{count}} 道</text>
+      <view class="arrow selected-arrow"></view>
+    </view>
+    <button class="button button--primary order-submit {{count ? '' : 'button--disabled'}}" aria-disabled="{{!count}}" bindtap="openMenu" hover-class="pressed">
+      <text>查看菜单</text><image class="submit-arrow" src="/assets/icons/forward.svg" mode="aspectFit" />
+    </button>
+  </view>
+</view>
+
+<view wx:if="{{showingSelection}}" class="overlay" bindtap="closeSelection">
+  <view class="sheet selection-sheet" catchtap="keepSheetOpen">
+    <view class="sheet-header display">
+      <text>已选 {{count}} 道菜</text>
+      <button class="control sheet-close" aria-label="关闭已选菜品" bindtap="closeSelection">×</button>
+    </view>
+    <scroll-view wx:if="{{count}}" class="selection-list" style="--selection-height: {{count * 104 + selectedGroups.length * 66}}rpx" scroll-y>
+      <view wx:for="{{selectedGroups}}" wx:key="id" wx:for-item="group" class="selection-group">
+        <view class="selection-category">{{group.name}}</view>
+        <dish-row wx:for="{{group.dishes}}" wx:key="id" dish="{{item}}" compact />
+      </view>
+    </scroll-view>
+    <view wx:else class="selection-empty">还没有选菜</view>
+  </view>
+</view>
+
+<view wx:elif="{{pair.length}}" class="overlay" bindtap="closePair" catchtouchmove="keepSheetOpen">
+  <view class="sheet" catchtap="keepSheetOpen">
+    <view class="sheet-header display">
+      <text>随机一荤一素</text>
+      <button class="control sheet-close" aria-label="关闭随机选菜" bindtap="closePair">×</button>
+    </view>
+    <view class="pair">
+      <view wx:for="{{pair}}" wx:key="id" class="pair-dish">
+        <image class="pair-photo" src="{{item.photo}}" mode="aspectFill" />
+        <text class="pair-name display">{{item.name}}</text>
+        <text class="pair-category">{{item.category === 'meat' ? '荤菜' : '蔬菜'}}</text>
+      </view>
+    </view>
+    <view class="pair-actions">
+      <button class="button button--outline {{canReroll ? '' : 'button--disabled'}}" bindtap="rerollPair" aria-disabled="{{!canReroll}}" hover-class="pressed">换一组</button>
+      <button class="button button--primary" bindtap="addPair" hover-class="pressed">加入菜单</button>
+    </view>
+  </view>
+</view>

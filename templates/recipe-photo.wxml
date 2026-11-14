@@ -1,0 +1,31 @@
+<template name="recipe-photo">
+  <view class="reader-stage">
+    <movable-area wx:if="{{total && !imageError}}" class="reader-zoom" scale-area>
+      <movable-view
+        wx:for="{{slides}}" wx:for-index="slideIndex" wx:key="*this" class="reader-photo"
+        direction="all" scale scale-min="{{1}}" scale-max="{{4}}" scale-value="{{1}}"
+      >
+        <image
+          class="reader-image" src="{{item}}" mode="aspectFit" data-src="{{item}}"
+          binderror="handleImageError" aria-label="第 {{index + 1}} 张做法大图"
+        />
+      </movable-view>
+    </movable-area>
+    <text wx:else class="reader-message">{{imageError ? '图片暂时无法加载' : '没有可查看的做法图'}}</text>
+  </view>
+
+  <view wx:if="{{total > 1 || (total === 1 && !imageError)}}" class="reader-tools">
+    <view wx:if="{{total > 1}}" class="reader-pagination">
+      <button
+        class="control reader-page-button" disabled="{{index === 0}}"
+        bindtap="previousPhoto" hover-class="pressed" aria-label="上一张"
+      ><view class="arrow reader-previous" aria-hidden="{{true}}"></view></button>
+      <text class="reader-counter">{{index + 1}} / {{total}}</text>
+      <button
+        class="control reader-page-button" disabled="{{index + 1 === total}}"
+        bindtap="nextPhoto" hover-class="pressed" aria-label="下一张"
+      ><view class="arrow" aria-hidden="{{true}}"></view></button>
+    </view>
+    <text wx:if="{{!imageError}}" class="reader-hint">双指缩放</text>
+  </view>
+</template>

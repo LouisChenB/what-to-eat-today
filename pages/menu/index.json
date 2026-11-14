@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "back-bar": "/components/back-bar/index",
+    "dish-row": "/components/dish-row/index"
+  }
+}

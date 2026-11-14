@@ -1,0 +1,24 @@
+.dish-row { display: flex; align-items: center; }
+.dish-row--selectable { border-bottom: 1px solid var(--line); }
+.dish-link { display: flex; flex: 1; min-width: 0; align-items: center; justify-content: space-between; gap: 22rpx; padding: 15rpx 0; text-align: left; }
+.dish-photo { box-sizing: border-box; width: 175rpx; height: 134rpx; flex-shrink: 0; border-radius: 18rpx; border: 2px solid transparent; }
+.dish-photo--selected { border-color: var(--action); }
+.dish-name { display: block; flex: 1; min-width: 0; color: var(--ink); font-family: var(--display); font-size: 36rpx; font-weight: 700; overflow-wrap: anywhere; }
+.selection-button { width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.selection-mark { box-sizing: border-box; width: 49rpx; height: 49rpx; border: 1.5px solid var(--muted); border-radius: 50%; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+.selection-mark--selected { background: var(--action); border-color: var(--action); color: var(--on-action); }
+.check { width: 19rpx; height: 11rpx; border-left: 3rpx solid currentColor; border-bottom: 3rpx solid currentColor; transform: rotate(-45deg) translateY(-2rpx); }
+.plus { position: relative; width: 21rpx; height: 21rpx; }
+.plus::before, .plus::after { position: absolute; content: ''; top: 50%; left: 50%; transform: translate(-50%, -50%); background: currentColor; border-radius: 1px; }
+.plus::before { width: 100%; height: 1.5px; }
+.plus::after { width: 1.5px; height: 100%; }
+.dish-row--menu .dish-photo { width: 41%; height: 165rpx; border: 0; }
+.dish-row--menu .dish-link { gap: 28rpx; }
+.dish-row--compact { border-bottom: 1px solid var(--line); }
+.dish-row--compact .dish-photo { width: 92rpx; height: 68rpx; border-radius: 12rpx; }
+.dish-row--compact .dish-name { font-size: 32rpx; }
+
+@media (max-width: 355px) {
+  .dish-row--selectable .dish-photo { width: 144rpx; height: 115rpx; }
+  .dish-row--selectable .dish-name { font-size: 33rpx; }
+}

@@ -1,0 +1,5 @@
+<import src="../../../templates/recipe-photo.wxml" />
+<view class="recipe-reader">
+  <back-bar class="reader-nav" />
+  <template is="recipe-photo" data="{{slides, index, total, imageError}}" />
+</view>

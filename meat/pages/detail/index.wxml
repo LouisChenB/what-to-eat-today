@@ -1,0 +1,3 @@
+<import src="../../../templates/dish-detail.wxml" />
+<back-bar />
+<template is="dish-detail" data="{{dish, categoryName, images, steps}}" />

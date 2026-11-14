@@ -1,0 +1,39 @@
+<template name="dish-detail">
+  <view wx:if="{{dish}}" class="detail">
+    <view class="dish-heading">
+      <text class="detail-title display">{{dish.name}}</text>
+      <text class="detail-category">{{categoryName}}</text>
+    </view>
+    <image class="detail-photo" src="{{dish.photo}}" mode="aspectFill" aria-label="{{dish.name}}的成品照" />
+
+    <view class="recipe-section">
+      <text class="recipe-title display">做法</text>
+      <view wx:if="{{images.length}}" class="recipe-pages">
+        <view
+          wx:for="{{images}}" wx:key="*this" class="recipe-page" role="button"
+          data-index="{{index}}" bindtap="openRecipePhoto" hover-class="pressed"
+          aria-label="查看第 {{index + 1}} 张做法大图"
+        >
+          <image class="recipe-thumbnail" src="{{item}}" mode="aspectFit" />
+          <view class="recipe-caption">
+            <text>第 {{index + 1}} 张</text>
+            <image class="expand-icon" src="/assets/icons/expand.svg" mode="aspectFit" aria-hidden="{{true}}" />
+          </view>
+        </view>
+      </view>
+      <block wx:else>
+        <image class="recipe-placeholder" src="/assets/brand/recipe-placeholder.png" mode="aspectFit" aria-hidden="{{true}}" />
+        <view class="recipe-steps">
+          <view class="recipe-step" wx:for="{{steps}}" wx:key="*this">
+            <text class="step-number">{{index + 1}}.</text>
+            <text class="step-copy">{{item}}</text>
+          </view>
+        </view>
+      </block>
+    </view>
+  </view>
+  <view wx:else class="empty-state">
+    <text>这道菜暂时无法打开</text>
+    <button class="button button--primary" bindtap="openOrder" hover-class="pressed">去点菜</button>
+  </view>
+</template>

@@ -1,0 +1,15 @@
+{
+  "pages": ["pages/order/index", "pages/menu/index", "pages/history/index"],
+  "subpackages": [
+    { "root": "meat", "pages": ["pages/detail/index", "pages/recipe-photo/index"] },
+    { "root": "vegetables", "pages": ["pages/detail/index", "pages/recipe-photo/index"] }
+  ],
+  "window": {
+    "navigationStyle": "custom",
+    "navigationBarTitleText": "",
+    "navigationBarBackgroundColor": "#FFF3AF",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#FFFCEE"
+  },
+  "sitemapLocation": "sitemap.json"
+}

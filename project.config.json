@@ -1,0 +1,45 @@
+{
+  "appid": "wx652c8cd8d158f7b7",
+  "projectname": "一桌家常",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "./",
+  "setting": {
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "uglifyFileName": false,
+    "enhance": true,
+    "compileWorklet": false,
+    "uploadWithSourceMap": true,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [
+      { "type": "folder", "value": "assets/source" },
+      { "type": "folder", "value": "assets/design" },
+      { "type": "folder", "value": "assets/profile" },
+      { "type": "folder", "value": "tests" },
+      { "type": "suffix", "value": ".md" }
+    ],
+    "include": [
+      { "type": "folder", "value": "assets/dishes" },
+      { "type": "folder", "value": "assets/brand" },
+      { "type": "folder", "value": "meat/recipes" },
+      { "type": "folder", "value": "vegetables/recipes" }
+    ]
+  },
+  "editorSetting": {}
+}

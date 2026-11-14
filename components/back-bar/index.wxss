@@ -1,0 +1,27 @@
+.back-bar { position: relative; }
+.back-button {
+  box-sizing: border-box;
+  position: absolute;
+  left: 10rpx;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.back-button::after { border: 0; }
+.back-pressed { opacity: .6; }
+.back-chevron {
+  width: 11px;
+  height: 11px;
+  margin-left: 4px;
+  border-top: 2px solid currentColor;
+  border-left: 2px solid currentColor;
+  transform: rotate(-45deg);
+}

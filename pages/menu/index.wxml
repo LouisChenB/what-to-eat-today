@@ -1,0 +1,48 @@
+<back-bar />
+
+<block wx:if="{{groups.length}}">
+  <view class="menu-cover">
+    <image class="menu-cover-image" src="/assets/brand/menu-cover.jpg" mode="aspectFill" />
+    <view class="menu-copy">
+      <text class="menu-date display">{{dateLabel}}</text>
+      <view class="menu-title-line">
+        <text class="menu-heading display {{customTitle ? 'menu-heading--custom' : ''}}">{{heading}}</text>
+        <button wx:if="{{mode === 'draft'}}" class="control edit-button" bindtap="openTitleEditor" aria-label="修改菜单标题" hover-class="pressed">
+          <image src="/assets/icons/edit.svg" mode="aspectFit" />
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <view class="menu-groups page-inset">
+    <view class="menu-group" wx:for="{{groups}}" wx:key="id" wx:for-item="group">
+      <view class="group-label display">{{group.name}}</view>
+      <dish-row wx:for="{{group.dishes}}" wx:key="id" dish="{{item}}" />
+    </view>
+  </view>
+
+  <view class="action-bar menu-actions">
+    <button wx:if="{{mode === 'draft' || mode === 'received'}}" class="button button--outline" bindtap="save" hover-class="pressed">保存菜单</button>
+    <button wx:else class="button button--outline" bindtap="openOrder" hover-class="pressed">{{hasDraft ? '继续点菜' : '开始新菜单'}}</button>
+    <button class="button button--primary" open-type="share" hover-class="pressed">
+      <image class="share-icon" src="/assets/icons/share.svg" mode="aspectFit" />
+      <text>发给对方</text>
+    </button>
+  </view>
+</block>
+
+<view wx:elif="{{mode === 'invalid'}}" class="empty-state">
+  <text>{{message}}</text>
+  <button class="button button--primary" bindtap="openOrder" hover-class="pressed">去点菜</button>
+</view>
+
+<view wx:if="{{editing}}" class="overlay editor-overlay" bindtap="closeTitleEditor">
+  <view class="sheet" catchtap="keepEditorOpen">
+    <view class="sheet-header display">
+      <text>修改菜单标题</text>
+      <button class="control sheet-close" aria-label="关闭标题编辑" bindtap="closeTitleEditor">×</button>
+    </view>
+    <input class="title-input" value="{{editValue}}" maxlength="{{titleLimit}}" placeholder="留空使用默认标题" bindinput="updateTitleInput" bindconfirm="commitTitle" confirm-type="done" cursor-spacing="24" aria-label="菜单标题" />
+    <button class="button button--primary editor-submit" bindtap="commitTitle" hover-class="pressed">确定</button>
+  </view>
+</view>

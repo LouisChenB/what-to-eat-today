@@ -1,0 +1,12 @@
+<view class="dish-row {{selectable ? 'dish-row--selectable' : 'dish-row--menu'}} {{compact ? 'dish-row--compact' : ''}}">
+  <view class="control dish-link" role="button" bindtap="openDetail" aria-label="查看{{dish.name}}的图片和做法" hover-class="pressed">
+    <image class="dish-photo {{selected ? 'dish-photo--selected' : ''}}" src="{{dish.photo}}" mode="aspectFill" lazy-load />
+    <text class="dish-name">{{dish.name}}</text>
+    <view wx:if="{{!selectable}}" class="arrow"></view>
+  </view>
+  <view wx:if="{{selectable}}" class="control selection-button" role="button" bindtap="toggle" hover-class="pressed" aria-label="{{selected ? '移除' : '添加'}}{{dish.name}}">
+    <view class="selection-mark {{selected ? 'selection-mark--selected' : ''}}">
+      <view class="{{selected ? 'check' : 'plus'}}"></view>
+    </view>
+  </view>
+</view>

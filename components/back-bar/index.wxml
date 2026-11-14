@@ -1,0 +1,5 @@
+<view class="back-bar" style="height: {{height}}px">
+  <button class="back-button" style="top: {{center}}px" bindtap="goBack" hover-class="back-pressed" aria-label="返回">
+    <view class="back-chevron" aria-hidden="{{true}}"></view>
+  </button>
+</view>

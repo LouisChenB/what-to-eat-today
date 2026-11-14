@@ -1,0 +1,13 @@
+<back-bar />
+
+<view wx:if="{{entries.length}}" class="history page-inset">
+  <view wx:for="{{entries}}" wx:key="id" class="control history-row" role="button" data-id="{{item.id}}" bindtap="openMenu" hover-class="pressed">
+    <image class="history-photo" src="{{item.photo}}" mode="aspectFill" lazy-load />
+    <view class="history-copy">
+      <text class="history-title display">{{item.title}}</text>
+      <text class="history-meta">{{item.meta}}</text>
+    </view>
+    <view class="arrow"></view>
+  </view>
+</view>
+<view wx:else class="empty-state">保存菜单后，就能在这里找到。</view>
