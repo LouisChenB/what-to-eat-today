@@ -1,8 +1,7 @@
 const { groupDishes } = require('../../data/dishes');
 const { getDateLabel, getMealLabel, getTitle, isValidTitle, normalizeTitle, TITLE_LIMIT } = require('../../lib/meal');
-const { readSharedMenu, shareMenu } = require('../../lib/share');
+const { decodeMenuCode, encodeMenuCode } = require('../../lib/share');
 const { readState, saveDraft, saveReceived, setDraft } = require('../../lib/store');
-
 const { ORDER_URL } = require('../../lib/navigation');
 
 Page({
@@ -14,11 +13,12 @@ Page({
     titleLimit: TITLE_LIMIT,
     editing: false,
     editValue: '',
+    shareCode: '',
   },
 
   onLoad(options) {
-    if (['d', 'm', 'i', 't'].some((key) => Object.prototype.hasOwnProperty.call(options, key))) {
-      this.renderMenu(readSharedMenu(options), 'received');
+    if (options.code !== undefined) {
+      this.renderMenu(decodeMenuCode(options.code), 'received');
       return;
     }
     const state = readState();
@@ -101,9 +101,21 @@ Page({
 
   openOrder() { wx.reLaunch({ url: ORDER_URL }); },
 
-  keepEditorOpen() {},
+  keepSheetOpen() {},
 
-  onShareAppMessage() {
-    return this.menu ? shareMenu(this.menu) : { title: '一桌家常', path: ORDER_URL };
+  openShareCode() {
+    if (this.menu) this.setData({ shareCode: encodeMenuCode(this.menu) });
+  },
+
+  closeShareCode() { this.setData({ shareCode: '' }); },
+
+  copyShareCode() {
+    const { shareCode } = this.data;
+    if (!shareCode) return;
+    wx.setClipboardData({
+      data: shareCode,
+      success: () => getApp().rememberClipboardCode(shareCode),
+      fail: () => wx.showToast({ title: '复制失败，请重试', icon: 'none' }),
+    });
   },
 });

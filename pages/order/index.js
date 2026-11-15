@@ -2,6 +2,7 @@ const { categories, dishes, dishById, groupDishes } = require('../../data/dishes
 const { changeSelection, getDateLabel, getMealLabel, getMealPeriod, randomPair } = require('../../lib/meal');
 const { readState, setDraft } = require('../../lib/store');
 const { getNavigationLayout } = require('../../lib/navigation');
+const { decodeMenuCode, encodeMenuCode, openReceivedMenu, readClipboardMenu } = require('../../lib/share');
 
 Page({
   data: {
@@ -17,6 +18,8 @@ Page({
     dateLabel: '',
     pair: [],
     canReroll: false,
+    showingMenuImporter: false,
+    importError: '',
   },
 
   onLoad() {
@@ -28,7 +31,10 @@ Page({
     this.refreshList();
   },
 
-  onReady() { this.measureCategoryBoundary(); },
+  onReady() {
+    this.measureCategoryBoundary();
+    getApp().onOrderReady();
+  },
 
   onResize() { this.measureCategoryBoundary(); },
 
@@ -140,4 +146,54 @@ Page({
   },
 
   openHistory() { wx.navigateTo({ url: '/pages/history/index' }); },
+
+  openMenuImporter() { this.setData({ showingMenuImporter: true, importError: '' }); },
+
+  closeMenuImporter() { this.setData({ showingMenuImporter: false }); },
+
+  clearImportError() {
+    if (this.data.importError) this.setData({ importError: '' });
+  },
+
+  importMenu({ detail: { value } }) {
+    const code = value.code?.trim() || '';
+    return this.previewImportedMenu(
+      decodeMenuCode(code),
+      code ? '分享码无效，请复制完整后重试' : '请粘贴菜单分享码',
+    );
+  },
+
+  async importClipboardMenu() {
+    if (this.readingClipboard || this.importingMenu) return;
+    this.readingClipboard = true;
+    try {
+      const menu = await readClipboardMenu();
+      if (this.data.showingMenuImporter) {
+        await this.previewImportedMenu(menu, '剪贴板里没有有效的菜单分享码');
+      }
+    } catch {
+      if (this.data.showingMenuImporter) this.setData({ importError: '无法读取剪贴板，请手动粘贴分享码' });
+    } finally {
+      this.readingClipboard = false;
+    }
+  },
+
+  async previewImportedMenu(menu, invalidMessage) {
+    if (this.importingMenu) return;
+    if (!menu) {
+      this.setData({ importError: invalidMessage });
+      return;
+    }
+    const code = encodeMenuCode(menu);
+    this.importingMenu = true;
+    try {
+      await openReceivedMenu(code);
+      getApp().rememberClipboardCode(code);
+      this.closeMenuImporter();
+    } catch {
+      this.setData({ importError: '暂时无法打开菜单，请重试' });
+    } finally {
+      this.importingMenu = false;
+    }
+  },
 });

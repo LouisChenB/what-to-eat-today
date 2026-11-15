@@ -3,7 +3,7 @@ const categories = [
   { id: 'vegetables', name: '蔬菜' },
 ];
 
-// The short IDs are part of the WeChat share path. Keep them unique and stable.
+// The short IDs are stored in menus and share codes. Keep them unique and stable.
 const dishes = [
   ['m1', 'meat', 'cola-wings', '可乐鸡翅'],
   ['m2', 'meat', 'sweet-sour-ribs', '糖醋排骨'],

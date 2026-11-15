@@ -6,7 +6,7 @@ const { setting: buildSettings } = require('../project.config.json');
 const { categories, dishes } = require('../data/dishes');
 const { getRecipe } = require('../data/recipes');
 const { getMealPeriod, getTitle, changeSelection, randomPair } = require('../lib/meal');
-const { readSharedMenu, shareMenu } = require('../lib/share');
+const { decodeMenuCode, encodeMenuCode } = require('../lib/share');
 const { readState, saveDraft, saveReceived, setDraft } = require('../lib/store');
 const { dishDetail } = require('../lib/dish-detail');
 const { getNavigationLayout, goBack } = require('../lib/navigation');
@@ -15,15 +15,15 @@ const root = path.resolve(__dirname, '..');
 const sample = { date: '2026-11-14', meal: 'dinner', title: '', dishIds: ['m1', 'v1'] };
 const tap = (dataset = {}) => ({ currentTarget: { dataset } });
 
-function mount(relativePath) {
+function mount(relativePath, register = 'Page') {
   const file = require.resolve(relativePath);
   delete require.cache[file];
   let page;
-  global.Page = (definition) => { page = definition; };
+  global[register] = (definition) => { page = definition; };
   try {
     require(file);
   } finally {
-    delete global.Page;
+    delete global[register];
   }
   page.setData = (next, done) => {
     Object.assign(page.data, next);
@@ -32,12 +32,11 @@ function mount(relativePath) {
   return page;
 }
 
-function shareQuery(menu) {
-  return Object.fromEntries(new URL(shareMenu(menu).path, 'https://example.invalid').searchParams);
-}
-
+let app;
 beforeEach(() => {
   const storage = new Map();
+  app = mount('../app', 'App');
+  global.getApp = () => app;
   global.wx = {
     getStorageSync: (key) => structuredClone(storage.get(key)),
     setStorageSync: (key, value) => storage.set(key, structuredClone(value)),
@@ -159,10 +158,17 @@ test('已选清单按分类展示草稿，关闭清单不影响选择', () => {
   assert.deepEqual(readState().draft, sample);
 });
 
-test('改名、保存后留在菜单页，历史可打开并重新分享', () => {
+test('草稿可复制分享码，改名并保存后可从历史生成新快照', () => {
   setDraft(sample);
   const page = mount('../pages/menu/index');
   page.onLoad({});
+  let copiedCode;
+  wx.setClipboardData = ({ data, success }) => { copiedCode = data; success(); };
+  page.openShareCode();
+  page.copyShareCode();
+  assert.deepEqual(decodeMenuCode(copiedCode), sample);
+  assert.equal(app.handledClipboardCode, copiedCode);
+  page.closeShareCode();
   page.openTitleEditor();
   page.updateTitleInput({ detail: { value: '  周末加餐  ' } });
   page.commitTitle();
@@ -176,7 +182,9 @@ test('改名、保存后留在菜单页，历史可打开并重新分享', () =>
   assert.equal(history.data.entries[0].title, '周末加餐');
   const reopened = mount('../pages/menu/index');
   reopened.onLoad({ saved: history.data.entries[0].id });
-  assert.equal(reopened.onShareAppMessage().title, '周末加餐');
+  reopened.openShareCode();
+  assert.deepEqual(decodeMenuCode(reopened.data.shareCode), { ...sample, title: '周末加餐' });
+  assert.deepEqual(decodeMenuCode(copiedCode), sample);
 });
 
 test('本机存储写入失败后草稿仍可重试', () => {
@@ -190,25 +198,60 @@ test('本机存储写入失败后草稿仍可重试', () => {
   assert.deepEqual(saveDraft().dishIds, sample.dishIds);
 });
 
-test('分享卡片携带完整菜品及 Unicode 标题，并拒绝非法参数', () => {
-  const menu = { ...sample, title: '我们吃饭 🍚 +&=？', dishIds: dishes.map(({ id }) => id) };
-  const params = shareQuery(menu);
-  assert.deepEqual(readSharedMenu(params), menu);
-  assert.equal(shareMenu(menu).title, menu.title);
-  assert.equal(readSharedMenu({ ...params, d: '2026-02-30' }), null);
-  assert.equal(readSharedMenu({ ...params, i: 'm1.m1' }), null);
-  assert.equal(readSharedMenu({ ...params, i: 'm9' }), null);
-  assert.equal(readSharedMenu({ ...params, m: 'breakfast' }), null);
-  assert.equal(readSharedMenu({ ...params, t: 'zzzz' }), null);
+test('分享码支持默认标题、全部菜品和 Unicode 标题，并拒绝无效或截断的代码', () => {
+  const menu = { ...sample, title: '我们吃饭 +&=？' + '🍚'.repeat(21), dishIds: dishes.map(({ id }) => id) };
+  const code = encodeMenuCode(menu);
+  const defaultCode = encodeMenuCode(sample);
+  assert.deepEqual(decodeMenuCode(` \n${code}\r\n`), menu);
+  assert.deepEqual(decodeMenuCode(defaultCode), sample);
+  for (const invalid of [
+    code.slice(0, -2), code + ' extra', code.replace('2026-11-14', '2026-02-30'),
+    defaultCode.replace('m1.v1', ''), code.replace('m1.', 'm2.'), code.replace('m1.', 'm9.'),
+    code.replace('dinner', 'breakfast'), defaultCode.replace('~', 'zzzz~'), '',
+    encodeMenuCode({ ...sample, title: '🍚'.repeat(31) }),
+  ]) {
+    assert.equal(decodeMenuCode(invalid), null, invalid);
+  }
 });
 
-test('收件人可以查看并保存快照，同一卡片去重，本机草稿保留', () => {
+test('首页可纠正无效分享码再导入，预览不写存储，保存去重并保留本机草稿', async () => {
   const ownDraft = { ...sample, title: '自己的菜单', dishIds: ['m2'] };
   setDraft(ownDraft);
+  const order = mount('../pages/order/index');
+  let navigation;
+  let navigationFails = true;
+  wx.navigateTo = async ({ url }) => {
+    navigation = url;
+    if (navigationFails) throw new Error('navigation failed');
+  };
+  const submit = (code) => order.importMenu({ detail: { value: { code } } });
+  order.openMenuImporter();
+  await submit(' ');
+  assert.match(order.data.importError, /粘贴/);
+  await submit('YZ_bad');
+  assert.match(order.data.importError, /无效/);
+  assert.equal(navigation, undefined);
+  order.clearImportError();
+  assert.equal(order.data.importError, '');
+  const code = encodeMenuCode(sample);
+  await submit(code);
+  assert.equal(order.data.showingMenuImporter, true);
+  assert.match(order.data.importError, /重试/);
+  navigationFails = false;
+  await submit(` ${code} \n`);
+  assert.equal(order.data.showingMenuImporter, false);
+
+  const url = new URL(navigation, 'https://example.invalid');
+  assert.equal(url.pathname, '/pages/menu/index');
   const page = mount('../pages/menu/index');
-  page.onLoad(shareQuery(sample));
+  page.onLoad(Object.fromEntries(url.searchParams));
   assert.equal(page.data.mode, 'received');
   assert.equal(page.data.groups.length, 2);
+  assert.deepEqual(readState().history, []);
+  assert.deepEqual(readState().draft, ownDraft);
+  page.openShareCode();
+  assert.equal(page.data.shareCode, code);
+  page.closeShareCode();
   page.openTitleEditor();
   assert.equal(page.data.editing, false);
   page.save();
@@ -218,9 +261,98 @@ test('收件人可以查看并保存快照，同一卡片去重，本机草稿�
   assert.equal(saveReceived(sample).added, false);
   assert.equal(readState().history.length, 1);
   const invalid = mount('../pages/menu/index');
-  invalid.onLoad({ i: 'unknown' });
+  invalid.onLoad({ code: 'YZ_bad' });
   assert.equal(invalid.data.mode, 'invalid');
   assert.equal(invalid.data.groups.length, 0);
+});
+
+test('首页就绪并授权后才检测分享码，取消后切回不重复提示', async () => {
+  let needAuthorization = true;
+  let clipboard = '普通文本';
+  let privacyChecks = 0;
+  let reads = 0;
+  let prompts = 0;
+  wx.getPrivacySetting = ({ success }) => {
+    privacyChecks += 1;
+    success({ needAuthorization });
+  };
+  wx.getClipboardData = async () => {
+    reads += 1;
+    return { data: clipboard };
+  };
+  wx.showModal = async () => { prompts += 1; return { confirm: false }; };
+  wx.navigateTo = () => assert.fail('取消后不应打开菜单');
+
+  await app.onShow();
+  assert.equal(privacyChecks, 0);
+  await app.onOrderReady();
+  await app.onOrderReady();
+  assert.equal(privacyChecks, 1);
+  assert.equal(reads, 0);
+  needAuthorization = false;
+  app.onHide();
+  await app.onShow();
+  assert.equal(reads, 1);
+  assert.equal(prompts, 0);
+  clipboard = encodeMenuCode(sample);
+  app.onHide();
+  await app.onShow();
+  assert.equal(prompts, 1);
+  app.onHide();
+  await app.onShow();
+  assert.equal(prompts, 1);
+
+  clipboard = encodeMenuCode({ ...sample, title: '新菜单' });
+  app.onHide();
+  await app.onShow();
+  assert.equal(prompts, 2);
+});
+
+test('应用前台提示确认后打开收件预览，重入期间只检查一次，保留草稿与历史', async () => {
+  const ownDraft = { ...sample, dishIds: ['m2'] };
+  setDraft(ownDraft);
+  const code = encodeMenuCode(sample);
+  let finishPrompt;
+  wx.getPrivacySetting = ({ success }) => { success({ needAuthorization: false }); };
+  wx.getClipboardData = async () => ({ data: ` ${code}\n` });
+  wx.showModal = ({ content }) => new Promise((resolve) => {
+    assert.equal(content, getTitle(sample));
+    assert.equal(finishPrompt, undefined);
+    finishPrompt = resolve;
+  });
+  let url;
+  wx.navigateTo = async (options) => { url = options.url; };
+
+  await app.onShow();
+  const check = app.onOrderReady();
+  await new Promise(setImmediate);
+  assert.equal(url, undefined);
+  await app.onShow();
+  finishPrompt({ confirm: true });
+  await check;
+  assert.equal(url, `/pages/menu/index?code=${code}`);
+  assert.equal(app.handledClipboardCode, code);
+  assert.deepEqual(readState().draft, ownDraft);
+  assert.deepEqual(readState().history, []);
+});
+
+test('主动读剪贴板失败时保留手动入口，随后可用同一入口查看有效分享码', async () => {
+  const order = mount('../pages/order/index');
+  let url;
+  wx.navigateTo = async (options) => { url = options.url; };
+  wx.getClipboardData = async () => { throw new Error('permission denied'); };
+  order.openMenuImporter();
+  await order.importClipboardMenu();
+  assert.equal(url, undefined);
+  assert.equal(order.data.showingMenuImporter, true);
+  assert.match(order.data.importError, /手动粘贴/);
+
+  const code = encodeMenuCode(sample);
+  wx.getClipboardData = async () => ({ data: code });
+  await order.importClipboardMenu();
+  assert.equal(url, `/pages/menu/index?code=${code}`);
+  assert.equal(order.data.showingMenuImporter, false);
+  assert.equal(app.handledClipboardCode, code);
 });
 
 test('全部菜品、详情入口和图片都随包提供', () => {
@@ -245,7 +377,7 @@ test('全部菜品、详情入口和图片都随包提供', () => {
   assert.equal(recipeCount, 8);
 });
 
-test('标题栏避开微信胶囊，返回保留页面栈，分享直达时返回点菜首页', () => {
+test('标题栏避开微信胶囊，返回优先保留页面栈', () => {
   wx.getDeviceInfo = () => ({ platform: 'ios' });
   wx.getWindowInfo = () => ({ statusBarHeight: 54 });
   wx.getMenuButtonBoundingClientRect = () => ({ top: 61, bottom: 93, height: 32 });
@@ -307,6 +439,9 @@ test('单张做法图可打开，文字菜谱及跨分包图片路径不进入�
   reader.onLoad({ id: 'm1', index: '99' });
   assert.equal(reader.data.total, 1);
   assert.match(reader.data.slides[0], /cola-wings/);
+  reader.startSwipe({ touches: [{ identifier: 1, clientX: 170, clientY: 50 }] });
+  reader.endSwipe({ touches: [], changedTouches: [{ identifier: 1, clientX: 50, clientY: 50 }] });
+  assert.equal(reader.data.index, 0);
 
   const otherReader = mount('../vegetables/pages/recipe-photo/index');
   otherReader.onLoad({ id: 'm1' });
@@ -315,4 +450,42 @@ test('单张做法图可打开，文字菜谱及跨分包图片路径不进入�
   assert.equal(otherReader.data.total, 0);
   otherReader.nextPhoto();
   assert.deepEqual(otherReader.data.slides, []);
+});
+
+test('多张做法图支持单指横滑，放大、双指、取消和纵滑均不翻页', () => {
+  const reader = mount('../vegetables/pages/recipe-photo/index');
+  reader.onLoad({ id: 'v4', index: '1' });
+  const point = (clientX, clientY, identifier = 1) => ({ identifier, clientX, clientY });
+  const start = () => reader.startSwipe({ touches: [point(150, 130)] });
+  const end = (x, y) => reader.endSwipe({ touches: [], changedTouches: [point(x, y)] });
+  const swipe = (x, y) => { start(); end(x, y); };
+  const setScale = (scale) => reader.handlePhotoScale({
+    ...tap({ src: reader.data.slides[0] }),
+    detail: { scale },
+  });
+
+  swipe(40, 130);
+  assert.equal(reader.data.index, 1);
+  swipe(260, 138);
+  assert.equal(reader.data.index, 0);
+  swipe(260, 130);
+  assert.equal(reader.data.index, 0);
+  swipe(40, 270);
+  swipe(102, 130);
+  start();
+  reader.cancelSwipe();
+  end(40, 130);
+  start();
+  reader.moveSwipe({ touches: [point(150, 130), point(200, 130, 2)] });
+  end(40, 130);
+  setScale(2);
+  swipe(40, 130);
+  assert.equal(reader.data.index, 0);
+  setScale(1);
+  swipe(40, 138);
+  assert.equal(reader.data.index, 1);
+  setScale(3);
+  reader.previousPhoto();
+  swipe(40, 130);
+  assert.equal(reader.data.index, 1);
 });

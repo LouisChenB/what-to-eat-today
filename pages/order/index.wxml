@@ -17,6 +17,9 @@
         <image class="toolbar-icon" src="/assets/icons/history.svg" mode="aspectFit" />
         <text>历史菜单</text>
       </view>
+      <view class="catalogue-action import-button" role="button" bindtap="openMenuImporter" hover-class="pressed">
+        <text>导入菜单</text>
+      </view>
     </view>
     <view class="catalogue-body">
       <view class="category-shortcuts">
@@ -85,5 +88,23 @@
       <button class="button button--outline {{canReroll ? '' : 'button--disabled'}}" bindtap="rerollPair" aria-disabled="{{!canReroll}}" hover-class="pressed">换一组</button>
       <button class="button button--primary" bindtap="addPair" hover-class="pressed">加入菜单</button>
     </view>
+  </view>
+</view>
+
+<view wx:elif="{{showingMenuImporter}}" class="overlay" bindtap="closeMenuImporter">
+  <view class="sheet" catchtap="keepSheetOpen">
+    <view class="sheet-header display">
+      <text>导入菜单</text>
+      <button class="control sheet-close" aria-label="关闭导入菜单" bindtap="closeMenuImporter">×</button>
+    </view>
+    <form bindsubmit="importMenu">
+      <textarea class="import-code" name="code" placeholder="粘贴好友发来的分享码" maxlength="{{-1}}"
+        fixed="{{true}}" cursor-spacing="24" bindinput="clearImportError" aria-label="菜单分享码" />
+      <text wx:if="{{importError}}" class="import-error">{{importError}}</text>
+      <view class="import-actions">
+        <button class="button button--outline" bindtap="importClipboardMenu" hover-class="pressed">从剪贴板查看</button>
+        <button class="button button--primary" form-type="submit" hover-class="pressed">查看菜单</button>
+      </view>
+    </form>
   </view>
 </view>

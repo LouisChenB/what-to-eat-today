@@ -14,5 +14,15 @@
 .menu-actions .button { flex: 1; white-space: nowrap; }
 .menu-actions .button--primary { flex: 1.12; }
 .share-icon { width: 34rpx; height: 34rpx; }
+.share-hint { display: block; margin-bottom: 18rpx; color: var(--muted); font-size: 28rpx; }
+.share-code {
+  display: block;
+  padding: 18rpx 20rpx;
+  border: 1px solid var(--line);
+  border-radius: 16rpx;
+  background: var(--surface);
+  font: 26rpx/1.45 monospace;
+  word-break: break-all;
+}
 .title-input { box-sizing: border-box; width: 100%; min-height: 44px; border-radius: 16rpx; border: 1px solid var(--line); background: var(--surface); padding: 12rpx 20rpx; }
 .editor-submit { width: 100%; margin-top: 24rpx; }

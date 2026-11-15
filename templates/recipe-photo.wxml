@@ -1,9 +1,11 @@
 <template name="recipe-photo">
-  <view class="reader-stage">
+  <view class="reader-stage" capture-bind:touchstart="startSwipe" capture-bind:touchmove="moveSwipe"
+    capture-bind:touchend="endSwipe" capture-bind:touchcancel="cancelSwipe">
     <movable-area wx:if="{{total && !imageError}}" class="reader-zoom" scale-area>
       <movable-view
-        wx:for="{{slides}}" wx:for-index="slideIndex" wx:key="*this" class="reader-photo"
+        wx:for="{{slides}}" wx:key="*this" class="reader-photo" data-src="{{item}}"
         direction="all" scale scale-min="{{1}}" scale-max="{{4}}" scale-value="{{1}}"
+        bindscale="handlePhotoScale"
       >
         <image
           class="reader-image" src="{{item}}" mode="aspectFit" data-src="{{item}}"
