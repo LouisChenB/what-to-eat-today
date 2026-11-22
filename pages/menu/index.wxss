@@ -7,8 +7,33 @@
 .menu-heading--custom { font-size: 49rpx; line-height: 1.2; }
 .edit-button { width: 44px; height: 44px; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
 .edit-button image { width: 42rpx; height: 42rpx; }
-.menu-tools { display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); }
-.menu-tool { min-height: 44px; font-size: 28rpx; }
+.menu-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding-top: 8rpx;
+  padding-bottom: 8rpx;
+  border-bottom: 1px solid var(--line);
+}
+.menu-tool {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 24rpx;
+  border: 1px solid var(--line);
+  border-radius: 18rpx;
+  background: var(--tray);
+  font-size: 28rpx;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.menu-tool.control--danger {
+  border-color: rgba(154, 52, 40, .28);
+  background: transparent;
+  font-weight: 500;
+}
 .menu-groups { padding-top: 24rpx; padding-bottom: calc(148rpx + env(safe-area-inset-bottom)); }
 .menu-group + .menu-group { margin-top: 36rpx; }
 .group-label { display: flex; gap: 22rpx; align-items: center; font-size: 43rpx; margin-bottom: 12rpx; }
