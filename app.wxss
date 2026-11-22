@@ -32,6 +32,7 @@ page {
 }
 
 button::after { border: 0; }
+.control--danger { color: #9a3428; }
 image { display: block; }
 
 .display { font-family: var(--display); font-weight: 700; }

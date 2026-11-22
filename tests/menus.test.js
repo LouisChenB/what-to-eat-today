@@ -41,6 +41,7 @@ beforeEach(() => {
     getStorageSync: (key) => structuredClone(storage.get(key)),
     setStorageSync: (key, value) => storage.set(key, structuredClone(value)),
     showToast() {},
+    hideShareMenu() {},
     navigateTo() {},
     reLaunch() {},
   };
@@ -198,6 +199,89 @@ test('本机存储写入失败后草稿仍可重试', () => {
   assert.deepEqual(saveDraft().dishIds, sample.dishIds);
 });
 
+test('草稿删除可取消，写入失败可重试，成功后返回空选择的点菜页', async (t) => {
+  saveReceived(sample);
+  setDraft({ ...sample, title: '待删除草稿' });
+  const before = readState();
+  const order = mount('../pages/order/index');
+  order.onShow();
+  const menu = mount('../pages/menu/index');
+  menu.onLoad({});
+  const getPages = global.getCurrentPages;
+  global.getCurrentPages = () => [order, menu];
+  t.after(() => {
+    if (getPages) global.getCurrentPages = getPages;
+    else delete global.getCurrentPages;
+  });
+  let returned = false;
+  wx.navigateBack = () => { returned = true; order.onShow(); };
+  let confirm = false;
+  let dialog;
+  wx.showModal = async (options) => { dialog = options; return { confirm }; };
+  await menu.deleteDraft();
+  assert.equal(dialog.title, '删除草稿？');
+  assert.deepEqual(readState(), before);
+  assert.equal(returned, false);
+
+  confirm = true;
+  let toast;
+  wx.showToast = ({ title }) => { toast = title; };
+  const write = wx.setStorageSync;
+  wx.setStorageSync = () => { throw new Error('storage full'); };
+  await menu.deleteDraft();
+  assert.match(toast, /删除失败/);
+  assert.deepEqual(readState(), before);
+  assert.equal(menu.data.mode, 'draft');
+  assert.equal(returned, false);
+
+  wx.setStorageSync = write;
+  await menu.deleteDraft();
+  assert.deepEqual(readState(), { ...before, draft: null });
+  assert.equal(returned, true);
+  assert.equal(order.data.count, 0);
+  assert.deepEqual(order.data.selectedGroups, []);
+});
+
+test('历史按记录 ID 删除，取消或写入失败时保留记录，全部删除后显示空列表', async () => {
+  setDraft(sample);
+  const oldest = saveDraft();
+  setDraft(sample);
+  const target = saveDraft();
+  const newest = saveReceived({ ...sample, title: '最新菜单' }).entry;
+  const draft = { ...sample, title: '本机草稿' };
+  setDraft(draft);
+  const before = readState();
+  const history = mount('../pages/history/index');
+  history.onShow();
+  let confirm = false;
+  let dialog;
+  wx.showModal = async (options) => { dialog = options; return { confirm }; };
+  const remove = (entry) => history.deleteMenu(tap({ id: entry.id }));
+  await remove(target);
+  assert.equal(dialog.content, getTitle(target));
+  assert.deepEqual(readState(), before);
+
+  confirm = true;
+  let toast;
+  wx.showToast = ({ title }) => { toast = title; };
+  const write = wx.setStorageSync;
+  wx.setStorageSync = () => { throw new Error('storage full'); };
+  await remove(target);
+  assert.match(toast, /删除失败/);
+  assert.deepEqual(readState(), before);
+  assert.deepEqual(history.data.entries.map(({ id }) => id), [newest.id, target.id, oldest.id]);
+
+  wx.setStorageSync = write;
+  await remove(target);
+  assert.deepEqual(readState(), { ...before, history: [newest, oldest] });
+  assert.deepEqual(history.data.entries.map(({ id }) => id), [newest.id, oldest.id]);
+  await remove(newest);
+  await remove(oldest);
+  assert.deepEqual(history.data.entries, []);
+  assert.deepEqual(readState(), { draft, history: [], nextId: before.nextId });
+  assert.equal(saveReceived(sample).entry.id, String(before.nextId));
+});
+
 test('分享码支持默认标题、全部菜品和 Unicode 标题，并拒绝无效或截断的代码', () => {
   const menu = { ...sample, title: '我们吃饭 +&=？' + '🍚'.repeat(21), dishIds: dishes.map(({ id }) => id) };
   const code = encodeMenuCode(menu);
@@ -212,6 +296,59 @@ test('分享码支持默认标题、全部菜品和 Unicode 标题，并拒绝�
   ]) {
     assert.equal(decodeMenuCode(invalid), null, invalid);
   }
+});
+
+test('草稿、历史和收件预览均可生成聊天卡片，卡片可在原菜单删除后还原并去重保存', async () => {
+  const original = { ...sample, title: '周末一起吃饭 🍚', dishIds: dishes.map(({ id }) => id) };
+  setDraft(original);
+  const sender = mount('../pages/menu/index');
+  sender.onLoad({});
+  const card = sender.onShareAppMessage();
+  assert.equal(card.title, original.title);
+  assert.equal(card.imageUrl, sender.data.cover);
+  assert.ok(fs.existsSync(path.join(root, card.imageUrl)));
+  const cardUrl = new URL(card.path, 'https://example.invalid');
+  assert.equal(cardUrl.pathname, '/pages/menu/index');
+  assert.deepEqual(decodeMenuCode(cardUrl.searchParams.get('code')), original);
+
+  sender.openTitleEditor();
+  sender.updateTitleInput({ detail: { value: '新标题' } });
+  sender.commitTitle();
+  sender.save();
+  assert.equal(sender.data.mode, 'saved');
+  const saved = mount('../pages/menu/index');
+  saved.onLoad({ saved: readState().history[0].id });
+  assert.deepEqual(saved.onShareAppMessage(), sender.onShareAppMessage());
+  assert.equal(saved.onShareAppMessage().title, '新标题');
+  assert.notEqual(saved.onShareAppMessage().path, card.path);
+  const history = mount('../pages/history/index');
+  history.onShow();
+  wx.showModal = async () => ({ confirm: true });
+  await history.deleteMenu(tap({ id: history.data.entries[0].id }));
+
+  const ownDraft = { ...sample, dishIds: ['m2'] };
+  setDraft(ownDraft);
+  const options = Object.fromEntries(cardUrl.searchParams);
+  const receiver = mount('../pages/menu/index');
+  receiver.onLoad(options);
+  assert.equal(receiver.data.mode, 'received');
+  assert.deepEqual(receiver.menu, original);
+  assert.deepEqual(receiver.onShareAppMessage(), card);
+  assert.deepEqual(readState().history, []);
+  receiver.save();
+  const reopened = mount('../pages/menu/index');
+  reopened.onLoad(options);
+  reopened.save();
+  assert.equal(readState().history.length, 1);
+  assert.deepEqual(readState().draft, ownDraft);
+
+  let hiddenMenus;
+  wx.hideShareMenu = ({ menus }) => { hiddenMenus = menus; };
+  const invalid = mount('../pages/menu/index');
+  invalid.onLoad({ code: 'YZ_bad' });
+  assert.deepEqual(hiddenMenus, ['shareAppMessage']);
+  assert.equal(invalid.data.message, '这份菜单无法打开');
+  assert.equal(invalid.onShareAppMessage(), undefined);
 });
 
 test('首页可纠正无效分享码再导入，预览不写存储，保存去重并保留本机草稿', async () => {
@@ -334,6 +471,40 @@ test('应用前台提示确认后打开收件预览，重入期间只检查一�
   assert.equal(app.handledClipboardCode, code);
   assert.deepEqual(readState().draft, ownDraft);
   assert.deepEqual(readState().history, []);
+});
+
+test('聊天卡片冷启动和后台唤起时跳过自动检测，普通进入后恢复检测', async () => {
+  const card = { path: 'pages/menu/index', query: { code: encodeMenuCode(sample) } };
+  const normal = { path: 'pages/order/index', query: {} };
+  let privacyChecks = 0;
+  let prompts = 0;
+  wx.getPrivacySetting = ({ success }) => {
+    privacyChecks += 1;
+    success({ needAuthorization: false });
+  };
+  wx.showModal = async () => { prompts += 1; return { confirm: false }; };
+  await app.onShow(card);
+  await app.onOrderReady();
+  assert.equal(privacyChecks, 0);
+
+  let finishRead;
+  wx.getClipboardData = () => new Promise((resolve) => { finishRead = resolve; });
+  app.onHide();
+  const check = app.onShow(normal);
+  await new Promise(setImmediate);
+  assert.equal(privacyChecks, 1);
+  app.onHide();
+  await app.onShow(card);
+  finishRead({ data: card.query.code });
+  await check;
+  assert.equal(privacyChecks, 1);
+  assert.equal(prompts, 0);
+
+  wx.getClipboardData = async () => ({ data: card.query.code });
+  app.onHide();
+  await app.onShow(normal);
+  assert.equal(privacyChecks, 2);
+  assert.equal(prompts, 1);
 });
 
 test('主动读剪贴板失败时保留手动入口，随后可用同一入口查看有效分享码', async () => {

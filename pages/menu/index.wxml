@@ -2,7 +2,7 @@
 
 <block wx:if="{{groups.length}}">
   <view class="menu-cover">
-    <image class="menu-cover-image" src="/assets/brand/menu-cover.jpg" mode="aspectFill" />
+    <image class="menu-cover-image" src="{{cover}}" mode="aspectFill" />
     <view class="menu-copy">
       <text class="menu-date display">{{dateLabel}}</text>
       <view class="menu-title-line">
@@ -12,6 +12,11 @@
         </button>
       </view>
     </view>
+  </view>
+
+  <view class="menu-tools page-inset">
+    <button class="control menu-tool" bindtap="openShareCode" hover-class="pressed">分享码</button>
+    <button wx:if="{{mode === 'draft'}}" class="control control--danger menu-tool" bindtap="deleteDraft" hover-class="pressed">删除草稿</button>
   </view>
 
   <view class="menu-groups page-inset">
@@ -24,9 +29,9 @@
   <view class="action-bar menu-actions">
     <button wx:if="{{mode === 'draft' || mode === 'received'}}" class="button button--outline" bindtap="save" hover-class="pressed">保存菜单</button>
     <button wx:else class="button button--outline" bindtap="openOrder" hover-class="pressed">{{hasDraft ? '继续点菜' : '开始新菜单'}}</button>
-    <button class="button button--primary" bindtap="openShareCode" hover-class="pressed">
+    <button class="button button--primary" open-type="share" hover-class="pressed">
       <image class="share-icon" src="/assets/icons/share.svg" mode="aspectFit" />
-      <text>分享码</text>
+      <text>分享到微信</text>
     </button>
   </view>
 </block>

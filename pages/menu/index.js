@@ -1,8 +1,10 @@
 const { groupDishes } = require('../../data/dishes');
 const { getDateLabel, getMealLabel, getTitle, isValidTitle, normalizeTitle, TITLE_LIMIT } = require('../../lib/meal');
-const { decodeMenuCode, encodeMenuCode } = require('../../lib/share');
+const { decodeMenuCode, encodeMenuCode, receivedMenuPath } = require('../../lib/share');
 const { readState, saveDraft, saveReceived, setDraft } = require('../../lib/store');
-const { ORDER_URL } = require('../../lib/navigation');
+const { ORDER_URL, goBack } = require('../../lib/navigation');
+
+const MENU_COVER = '/assets/brand/menu-cover.jpg';
 
 Page({
   data: {
@@ -10,6 +12,7 @@ Page({
     groups: [],
     heading: '',
     dateLabel: '',
+    cover: MENU_COVER,
     titleLimit: TITLE_LIMIT,
     editing: false,
     editValue: '',
@@ -32,6 +35,7 @@ Page({
   renderMenu(menu, mode) {
     this.menu = menu || null;
     if (!menu) {
+      wx.hideShareMenu({ menus: ['shareAppMessage'] });
       this.setData({
         mode: 'invalid',
         groups: [],
@@ -99,7 +103,38 @@ Page({
     }
   },
 
+  async deleteDraft() {
+    if (this.data.mode !== 'draft' || this.deletingDraft) return;
+    this.deletingDraft = true;
+    try {
+      const { confirm } = await wx.showModal({
+        title: '删除草稿？',
+        content: '已选菜品和菜单标题将被清空。',
+        confirmText: '删除',
+        confirmColor: '#9A3428',
+      });
+      if (!confirm) return;
+      setDraft(null);
+    } catch {
+      wx.showToast({ title: '草稿删除失败，请重试', icon: 'none' });
+      return;
+    } finally {
+      this.deletingDraft = false;
+    }
+    this.renderMenu(null, 'draft');
+    goBack();
+  },
+
   openOrder() { wx.reLaunch({ url: ORDER_URL }); },
+
+  onShareAppMessage() {
+    if (!this.menu) return;
+    return {
+      title: getTitle(this.menu),
+      path: receivedMenuPath(encodeMenuCode(this.menu)),
+      imageUrl: MENU_COVER,
+    };
+  },
 
   keepSheetOpen() {},
 

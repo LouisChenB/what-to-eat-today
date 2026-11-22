@@ -1,13 +1,13 @@
 const { getTitle } = require('./lib/meal');
-const { encodeMenuCode, openReceivedMenu, readClipboardMenu } = require('./lib/share');
+const { MENU_PAGE, encodeMenuCode, openReceivedMenu, readClipboardMenu } = require('./lib/share');
 
 App({
-  onShow() {
-    this.foreground = true;
+  onShow({ path, query } = {}) {
+    this.canCheckClipboard = path !== MENU_PAGE || query?.code === undefined;
     return this.checkClipboardMenu();
   },
 
-  onHide() { this.foreground = false; },
+  onHide() { this.canCheckClipboard = false; },
 
   onOrderReady() {
     if (this.orderReady) return;
@@ -16,15 +16,15 @@ App({
   },
 
   async checkClipboardMenu() {
-    if (!this.orderReady || !this.foreground || this.checkingClipboard) return;
+    if (!this.orderReady || !this.canCheckClipboard || this.checkingClipboard) return;
     this.checkingClipboard = true;
     try {
       const { needAuthorization } = await new Promise((resolve, reject) => {
         wx.getPrivacySetting({ success: resolve, fail: reject });
       });
-      if (needAuthorization || !this.foreground) return;
+      if (needAuthorization || !this.canCheckClipboard) return;
       const menu = await readClipboardMenu();
-      if (menu && this.foreground) await this.suggestClipboardMenu(menu);
+      if (menu && this.canCheckClipboard) await this.suggestClipboardMenu(menu);
     } catch {
       // A background check should leave the current page usable if reading fails.
     } finally {
@@ -44,6 +44,7 @@ App({
       confirmText: '查看菜单',
       confirmColor: '#302B10',
     });
+    if (!this.canCheckClipboard) return;
     if (confirm) {
       try {
         await openReceivedMenu(code);
