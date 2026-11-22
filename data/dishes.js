@@ -13,6 +13,7 @@ const dishes = [
   ['m6', 'meat', 'pepper-pork', '辣椒炒肉'],
   ['m7', 'meat', 'red-braised-pork', '红烧肉'],
   ['m8', 'meat', 'steamed-sea-bass', '清蒸鲈鱼'],
+  ['m9', 'meat', 'potato-pork', '土豆片炒肉'],
   ['v1', 'vegetables', 'oyster-lettuce', '蚝油生菜'],
   ['v2', 'vegetables', 'green-pepper-eggs', '青椒炒蛋'],
   ['v3', 'vegetables', 'onion-eggs', '洋葱炒鸡蛋'],
@@ -21,6 +22,9 @@ const dishes = [
   ['v6', 'vegetables', 'torn-cabbage', '手撕包菜'],
   ['v7', 'vegetables', 'garlic-broccoli', '蒜蓉西兰花'],
   ['v8', 'vegetables', 'di-san-xian', '地三鲜'],
+  ['v9', 'vegetables', 'wood-ear-eggs', '木耳炒鸡蛋'],
+  ['v10', 'vegetables', 'mapo-tofu', '麻婆豆腐'],
+  ['v11', 'vegetables', 'scallion-tofu', '小葱拌豆腐'],
 ].map(([id, category, slug, name]) => ({
   id,
   category,

@@ -1,19 +1,19 @@
 const recipes = {
   m1: ['cola-wings'],
   m2: ['sweet-sour-ribs'],
+  m3: ['stir-fried-beef-1', 'stir-fried-beef-2', 'stir-fried-beef-3'],
   m5: ['shrimp-eggs'],
   m6: ['pepper-pork'],
+  m9: ['potato-pork'],
   v1: ['oyster-lettuce'],
   v3: ['onion-eggs'],
   v4: ['tomato-eggs-1', 'tomato-eggs-2'],
+  v9: ['wood-ear-eggs'],
+  v10: ['mapo-tofu-1', 'mapo-tofu-2', 'mapo-tofu-3', 'mapo-tofu-4', 'mapo-tofu-5'],
+  v11: ['scallion-tofu'],
 };
 
 const steps = {
-  m3: [
-    '黄牛肉逆纹切薄片，用生抽、淀粉和少许油抓匀，腌 10 分钟。青红椒斜切，蒜切片。',
-    '热锅下油，牛肉大火炒散，变色后先盛出。',
-    '蒜和青红椒炒香，倒回牛肉，加少许生抽和盐，快速翻炒至熟。',
-  ],
   m4: [
     '羊腿肉切薄片，加生抽、料酒和少量盐抓匀。洋葱切丝。',
     '热锅少油，下羊肉大火煸炒，待表面微焦，加入洋葱炒香。',

@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { test, beforeEach } = require('node:test');
 const { setting: buildSettings } = require('../project.config.json');
-const { categories, dishes } = require('../data/dishes');
+const { categories, dishes, dishById } = require('../data/dishes');
 const { getRecipe } = require('../data/recipes');
 const { getMealPeriod, getTitle, changeSelection, randomPair } = require('../lib/meal');
 const { decodeMenuCode, encodeMenuCode } = require('../lib/share');
@@ -61,7 +61,7 @@ test('点菜列表先荤后素，可跨分类选菜，重新打开仍恢复草�
   page.onShow();
   assert.equal(page.data.count, 2);
   assert.deepEqual(page.data.dishList.map(({ category }) => category), [
-    ...Array(8).fill('meat'), ...Array(8).fill('vegetables'),
+    ...Array(9).fill('meat'), ...Array(11).fill('vegetables'),
   ]);
   assert.deepEqual(page.data.dishList.filter(({ selected }) => selected).map(({ id }) => id), ['m1', 'v1']);
   page.toggleDish({ detail: { id: 'm2' } });
@@ -290,7 +290,7 @@ test('分享码支持默认标题、全部菜品和 Unicode 标题，并拒绝�
   assert.deepEqual(decodeMenuCode(defaultCode), sample);
   for (const invalid of [
     code.slice(0, -2), code + ' extra', code.replace('2026-11-14', '2026-02-30'),
-    defaultCode.replace('m1.v1', ''), code.replace('m1.', 'm2.'), code.replace('m1.', 'm9.'),
+    defaultCode.replace('m1.v1', ''), code.replace('m1.', 'm2.'), code.replace('m1.', 'm99.'),
     code.replace('dinner', 'breakfast'), defaultCode.replace('~', 'zzzz~'), '',
     encodeMenuCode({ ...sample, title: '🍚'.repeat(31) }),
   ]) {
@@ -528,7 +528,8 @@ test('主动读剪贴板失败时保留手动入口，随后可用同一入口�
 
 test('全部菜品、详情入口和图片都随包提供', () => {
   assert.equal(buildSettings.ignoreUploadUnusedFiles, false, '动态引用的做法图必须随包上传');
-  assert.deepEqual(categories.map(({ id }) => dishes.filter((dish) => dish.category === id).length), [8, 8]);
+  assert.deepEqual(categories.map(({ id }) => dishes.filter((dish) => dish.category === id).length), [9, 11]);
+  assert.equal(dishById.size, dishes.length);
   let recipeCount = 0;
   for (const dish of dishes) {
     const recipe = getRecipe(dish);
@@ -545,7 +546,39 @@ test('全部菜品、详情入口和图片都随包提供', () => {
       assert.equal(jpeg.readUInt16BE(jpeg.length - 2), 0xffd9, image);
     }
   }
-  assert.equal(recipeCount, 8);
+  assert.equal(recipeCount, 19);
+});
+
+test('六道菜按所属分包载入做法图，并能从最后一张打开大图', () => {
+  for (const [id, category, slug, total] of [
+    ['m3', 'meat', 'stir-fried-beef', 3],
+    ['m5', 'meat', 'shrimp-eggs', 1],
+    ['m9', 'meat', 'potato-pork', 1],
+    ['v9', 'vegetables', 'wood-ear-eggs', 1],
+    ['v10', 'vegetables', 'mapo-tofu', 5],
+    ['v11', 'vegetables', 'scallion-tofu', 1],
+  ]) {
+    const dish = dishById.get(id);
+    assert.equal(dish.detailUrl, `/${category}/pages/detail/index?id=${id}`);
+    const page = mount(`..${dish.detailUrl.split('?')[0]}`);
+    page.onLoad({ id });
+    const images = Array.from({ length: total }, (_, index) => {
+      const suffix = total > 1 ? `-${index + 1}` : '';
+      return `/${category}/recipes/${slug}${suffix}.jpg`;
+    });
+    assert.deepEqual(page.data.images, images);
+    assert.deepEqual(page.data.steps, []);
+
+    let url;
+    wx.navigateTo = (options) => { url = options.url; };
+    page.openRecipePhoto(tap({ index: total - 1 }));
+    const readerPath = `/${category}/pages/recipe-photo/index`;
+    assert.equal(url, `${readerPath}?id=${id}&index=${total - 1}`);
+    const reader = mount(`..${readerPath}`);
+    reader.onLoad({ id, index: String(total - 1) });
+    assert.equal(reader.data.total, total);
+    assert.deepEqual(reader.data.slides, [images.at(-1)]);
+  }
 });
 
 test('标题栏避开微信胶囊，返回优先保留页面栈', () => {
