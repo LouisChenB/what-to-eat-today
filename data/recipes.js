@@ -5,6 +5,7 @@ const recipes = {
   m5: ['shrimp-eggs'],
   m6: ['pepper-pork'],
   m9: ['potato-pork'],
+  m10: ['pepper-chicken-thigh'],
   v1: ['oyster-lettuce'],
   v3: ['onion-eggs'],
   v4: ['tomato-eggs-1', 'tomato-eggs-2'],

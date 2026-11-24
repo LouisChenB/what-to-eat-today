@@ -14,6 +14,7 @@ const dishes = [
   ['m7', 'meat', 'red-braised-pork', '红烧肉'],
   ['m8', 'meat', 'steamed-sea-bass', '清蒸鲈鱼'],
   ['m9', 'meat', 'potato-pork', '土豆片炒肉'],
+  ['m10', 'meat', 'pepper-chicken-thigh', '青红椒炒鸡腿肉'],
   ['v1', 'vegetables', 'oyster-lettuce', '蚝油生菜'],
   ['v2', 'vegetables', 'green-pepper-eggs', '青椒炒蛋'],
   ['v3', 'vegetables', 'onion-eggs', '洋葱炒鸡蛋'],

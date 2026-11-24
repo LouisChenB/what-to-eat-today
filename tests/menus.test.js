@@ -61,12 +61,12 @@ test('点菜列表先荤后素，可跨分类选菜，重新打开仍恢复草�
   page.onShow();
   assert.equal(page.data.count, 2);
   assert.deepEqual(page.data.dishList.map(({ category }) => category), [
-    ...Array(9).fill('meat'), ...Array(11).fill('vegetables'),
+    ...Array(10).fill('meat'), ...Array(11).fill('vegetables'),
   ]);
   assert.deepEqual(page.data.dishList.filter(({ selected }) => selected).map(({ id }) => id), ['m1', 'v1']);
-  page.toggleDish({ detail: { id: 'm2' } });
+  page.toggleDish({ detail: { id: 'm10' } });
   page.toggleDish({ detail: { id: 'v2' } });
-  const updatedDraft = { ...draft, dishIds: ['m1', 'm2', 'v1', 'v2'] };
+  const updatedDraft = { ...draft, dishIds: ['m1', 'm10', 'v1', 'v2'] };
   assert.deepEqual(readState().draft, updatedDraft);
   const reopened = mount('../pages/order/index');
   reopened.onShow();
@@ -528,7 +528,7 @@ test('主动读剪贴板失败时保留手动入口，随后可用同一入口�
 
 test('全部菜品、详情入口和图片都随包提供', () => {
   assert.equal(buildSettings.ignoreUploadUnusedFiles, false, '动态引用的做法图必须随包上传');
-  assert.deepEqual(categories.map(({ id }) => dishes.filter((dish) => dish.category === id).length), [9, 11]);
+  assert.deepEqual(categories.map(({ id }) => dishes.filter((dish) => dish.category === id).length), [10, 11]);
   assert.equal(dishById.size, dishes.length);
   let recipeCount = 0;
   for (const dish of dishes) {
@@ -546,14 +546,15 @@ test('全部菜品、详情入口和图片都随包提供', () => {
       assert.equal(jpeg.readUInt16BE(jpeg.length - 2), 0xffd9, image);
     }
   }
-  assert.equal(recipeCount, 19);
+  assert.equal(recipeCount, 20);
 });
 
-test('六道菜按所属分包载入做法图，并能从最后一张打开大图', () => {
+test('七道菜按所属分包载入做法图，并能从最后一张打开大图', () => {
   for (const [id, category, slug, total] of [
     ['m3', 'meat', 'stir-fried-beef', 3],
     ['m5', 'meat', 'shrimp-eggs', 1],
     ['m9', 'meat', 'potato-pork', 1],
+    ['m10', 'meat', 'pepper-chicken-thigh', 1],
     ['v9', 'vegetables', 'wood-ear-eggs', 1],
     ['v10', 'vegetables', 'mapo-tofu', 5],
     ['v11', 'vegetables', 'scallion-tofu', 1],
